@@ -75,7 +75,7 @@ export default function ReviewQueue({ documents }: { documents: Document[] }) {
                 {key === 'form_type' ? (
                   <select
                     value={(form[key] as string) ?? (selected[key] as string) ?? ''}
-                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value as never }))}
                     className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {(Object.keys(FORM_TYPE_LABELS) as FormType[]).map(ft => (
                       <option key={ft} value={ft}>{FORM_TYPE_LABELS[ft]}</option>
@@ -84,7 +84,7 @@ export default function ReviewQueue({ documents }: { documents: Document[] }) {
                 ) : (
                   <input
                     value={(form[key] as string) ?? (selected[key] as string) ?? ''}
-                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value as never }))}
                     className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 )}
               </div>
