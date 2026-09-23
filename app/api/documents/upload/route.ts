@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import Anthropic from '@anthropic-ai/sdk'
+import { z } from 'zod'
+
+// --- Input guardrails ---
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif']
+
+// Zod schema to validate and sanitize Claude AI output before DB insert
+const ExtractionSchema = z.object({
+  form_type: z.enum(['NOMINEE', 'SURRENDER', 'DEATH_CLAIM', 'PSF06A', 'MEDICAL', 'NEW_POLICY', 'UNKNOWN']).default('UNKNOWN'),
+  life_assured_name: z.string().max(200).optional().nullable(),
+  nric: z.string().max(20).regex(/^[\d\-]+$/).optional().nullable(),
+  policy_no: z.string().max(50).optional().nullable(),
+  agent_name: z.string().max(200).optional().nullable(),
+  confidence_score: z.number().min(0).max(1).default(0),
+  key_details: z.record(z.unknown()).optional().nullable(),
+})
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -68,8 +85,19 @@ export async function POST(req: NextRequest) {
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
-  const buf = Buffer.from(await file.arrayBuffer())
+  // Input guardrail: file size
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json({ error: 'File too large. Maximum size is 10MB.' }, { status: 400 })
+  }
+
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin'
+
+  // Input guardrail: MIME type + extension allowlist
+  if (!ALLOWED_MIME_TYPES.includes(file.type) || !ALLOWED_EXTENSIONS.includes(ext)) {
+    return NextResponse.json({ error: 'Invalid file type. Only PDF, JPG, PNG, WEBP, GIF allowed.' }, { status: 400 })
+  }
+
+  const buf = Buffer.from(await file.arrayBuffer())
   const storagePath = `${user.id}/${Date.now()}-${file.name}`
 
   const { error: uploadError } = await adminClient.storage
@@ -131,12 +159,19 @@ export async function POST(req: NextRequest) {
 
     const toolUse = response.content.find(b => b.type === 'tool_use')
     if (toolUse && toolUse.type === 'tool_use') {
-      extracted = toolUse.input as Record<string, unknown>
+      // Validate and sanitize Claude output before trusting it
+      const parseResult = ExtractionSchema.safeParse(toolUse.input)
+      if (parseResult.success) {
+        extracted = parseResult.data as Record<string, unknown>
+      } else {
+        console.warn('Claude output failed Zod validation — using empty extraction')
+        extracted = {}
+      }
       const confidence = (extracted.confidence_score as number) ?? 0
       status = confidence >= 0.7 ? 'filed' : 'review'
     }
   } catch (claudeErr) {
-    console.error('Claude extraction error:', claudeErr)
+    console.error('Claude extraction error:', claudeErr instanceof Error ? claudeErr.message : 'unknown')
     status = 'error'
   }
 
@@ -160,8 +195,8 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (dbError) {
-    console.error('DB insert error:', dbError)
-    return NextResponse.json({ error: `DB error: ${dbError.message}` }, { status: 500 })
+    console.error('DB insert error — document_id omitted, check Supabase logs')
+    return NextResponse.json({ error: 'Failed to save document. Please try again.' }, { status: 500 })
   }
 
   return NextResponse.json({ document: doc, status })
