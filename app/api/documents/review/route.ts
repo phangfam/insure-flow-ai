@@ -33,10 +33,13 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json()
   const { id, ...updates } = body
+  if (!id) return NextResponse.json({ error: 'Missing document id' }, { status: 400 })
+
   const { data, error } = await adminClient
     .from('documents')
     .update({ ...updates, status: 'filed' })
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .single()
 
