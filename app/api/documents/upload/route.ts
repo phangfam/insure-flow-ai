@@ -17,7 +17,7 @@ const ExtractionSchema = z.object({
   policy_no: z.string().max(50).optional().nullable(),
   agent_name: z.string().max(200).optional().nullable(),
   confidence_score: z.number().min(0).max(1).default(0),
-  key_details: z.record(z.unknown()).optional().nullable(),
+  key_details: z.record(z.string(), z.unknown()).optional().nullable(),
 })
 
 export const runtime = 'nodejs'
