@@ -8,10 +8,7 @@ export default function PendingPage() {
           Your account has been created. Please wait for your agency admin to approve your access.
           You will be able to log in once approved.
         </p>
-        
-          href="/login"
-          className="text-sm text-blue-600 hover:underline"
-        >
+        <a href="/login" className="text-sm text-blue-600 hover:underline">
           Back to login
         </a>
       </div>
