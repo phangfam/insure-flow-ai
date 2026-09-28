@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.approved && pathname !== '/pending') {
+  if (!profile?.approved) {
     return NextResponse.redirect(new URL('/pending', request.url))
   }
 
@@ -47,4 +47,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher:
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}
