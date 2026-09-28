@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import HelpChat from '@/components/HelpChat'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: profile } = await supabase.from('profiles').select('approved, role').eq('id', user.id).single()
+  if (!profile?.approved) redirect('/pending')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -15,11 +17,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <span className="font-bold text-gray-900">InsureFlow AI</span>
           <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Documents</Link>
           <Link href="/review" className="text-sm text-gray-600 hover:text-gray-900">Review Queue</Link>
+          {(profile.role === 'master' || profile.role === 'admin') && (
+            <Link href="/admin" className="text-sm text-gray-600 hover:text-gray-900">Admin</Link>
+          )}
         </div>
         <span className="text-xs text-gray-400">{user.email}</span>
       </nav>
       <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
-      <HelpChat />
     </div>
   )
 }
