@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import HelpChat from '@/components/HelpChat'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -18,6 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <span className="text-xs text-gray-400">{user.email}</span>
       </nav>
       <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
+      <HelpChat />
     </div>
   )
 }
