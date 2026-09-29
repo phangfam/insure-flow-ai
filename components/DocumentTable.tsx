@@ -183,7 +183,11 @@ export default function DocumentTable({ documents }: { documents: Document[] }) 
                     <td className="px-4 py-2.5">
                       <input type="checkbox" checked={isSelected} onChange={() => toggleOne(doc.id)} className="cursor-pointer" />
                     </td>
-                    <td className="px-4 py-2.5 max-w-xs truncate font-semibold" style={{ color: DARK }}>{doc.file_name}</td>
+                    <td className="px-4 py-2.5 max-w-xs truncate font-semibold">
+                      <Link href={`/documents/${doc.id}`} className="hover:underline" style={{ color: DARK }}>
+                        {doc.file_name}
+                      </Link>
+                    </td>
                     <td className="px-4 py-2.5" style={{ color: '#6b7280' }}>{(FORM_TYPE_LABELS as Record<string, string>)[doc.form_type] ?? doc.form_type}</td>
                     <td className="px-4 py-2.5" style={{ color: '#374151' }}>
                       {doc.life_assured_name
