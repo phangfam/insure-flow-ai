@@ -3,6 +3,9 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Document, FORM_TYPE_LABELS } from '@/lib/types/document'
 
+const ACCENT = '#F45D54'
+const DARK = '#111827'
+
 type SortKey = 'file_name' | 'form_type' | 'life_assured_name' | 'nric' | 'policy_no' | 'agent_name' | 'status' | 'created_at'
 type SortDir = 'asc' | 'desc'
 
@@ -38,6 +41,12 @@ function exportCSV(docs: Document[]) {
   a.download = `insureflow-export-${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+const statusStyle = (s: string): { bg: string; color: string } => {
+  if (s === 'filed')  return { bg: '#f0fdf4', color: '#16a34a' }
+  if (s === 'review') return { bg: '#fffbeb', color: '#d97706' }
+  return { bg: '#fff5f5', color: ACCENT }
 }
 
 export default function DocumentTable({ documents }: { documents: Document[] }) {
@@ -78,48 +87,40 @@ export default function DocumentTable({ documents }: { documents: Document[] }) 
 
   const toggleAll = () => {
     if (allChecked) {
-      setSelected(prev => {
-        const next = new Set(prev)
-        filtered.forEach(d => next.delete(d.id))
-        return next
-      })
+      setSelected(prev => { const n = new Set(prev); filtered.forEach(d => n.delete(d.id)); return n })
     } else {
-      setSelected(prev => {
-        const next = new Set(prev)
-        filtered.forEach(d => next.add(d.id))
-        return next
-      })
+      setSelected(prev => { const n = new Set(prev); filtered.forEach(d => n.add(d.id)); return n })
     }
   }
 
   const toggleOne = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
   const selectedDocs = filtered.filter(d => selected.has(d.id))
 
-  const statusBadge = (s: string) => {
-    if (s === 'filed') return 'bg-green-100 text-green-700'
-    if (s === 'review') return 'bg-yellow-100 text-yellow-700'
-    return 'bg-red-100 text-red-700'
-  }
-
   const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <span className="ml-1 text-gray-300">↕</span>
-    return <span className="ml-1 text-blue-500">{sortDir === 'asc' ? '↑' : '↓'}</span>
+    if (sortKey !== col) return <span className="ml-1" style={{ color: '#d1d5db' }}>↕</span>
+    return <span className="ml-1" style={{ color: ACCENT }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 flex gap-3 items-center">
-        <input placeholder="Search name, NRIC, policy..." value={search} onChange={e => setSearch(e.target.value)}
-          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none">
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+      {/* Toolbar */}
+      <div className="px-4 py-3 flex gap-3 items-center" style={{ borderBottom: '1px solid #f3f4f6', background: '#fafafa' }}>
+        <input
+          placeholder="Search name, NRIC, policy..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="flex-1 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2"
+          style={{ border: '1px solid #e5e7eb', focusRingColor: ACCENT }}
+        />
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="text-sm px-3 py-1.5 rounded-lg focus:outline-none"
+          style={{ border: '1px solid #e5e7eb', background: '#fff', color: DARK }}
+        >
           <option value="all">All status</option>
           <option value="filed">Filed</option>
           <option value="review">Review</option>
@@ -128,57 +129,100 @@ export default function DocumentTable({ documents }: { documents: Document[] }) 
         {someChecked && (
           <button
             onClick={() => exportCSV(selectedDocs)}
-            className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-medium transition-colors"
+            className="text-sm px-4 py-1.5 rounded-lg font-semibold transition-opacity hover:opacity-90"
+            style={{ background: DARK, color: '#fff' }}
           >
-            Export {selectedDocs.length} row{selectedDocs.length > 1 ? 's' : ''}
+            Export {selectedDocs.length}
           </button>
         )}
       </div>
+
       {filtered.length === 0 ? (
-        <div className="px-6 py-12 text-center text-gray-400 text-sm">No documents yet. Upload one above.</div>
+        <div className="px-6 py-16 text-center text-sm" style={{ color: '#9ca3af' }}>No documents found. Upload one above.</div>
       ) : (
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-            <tr>
-              <th className="px-4 py-2">
-                <input type="checkbox" checked={allChecked} ref={el => { if (el) el.indeterminate = someChecked && !allChecked }}
-                  onChange={toggleAll} className="cursor-pointer" />
-              </th>
-              {COLUMNS.map(col => (
-                <th key={col.key}
-                  className="px-4 py-2 text-left font-medium cursor-pointer select-none hover:text-gray-800 hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSort(col.key)}
-                >
-                  {col.label}<SortIcon col={col.key} />
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #f3f4f6' }}>
+                <th className="px-4 py-2.5 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    ref={el => { if (el) el.indeterminate = someChecked && !allChecked }}
+                    onChange={toggleAll}
+                    className="cursor-pointer"
+                    style={{ accentColor: ACCENT }}
+                  />
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map(doc => (
-              <tr key={doc.id} className={`hover:bg-gray-50 ${selected.has(doc.id) ? 'bg-blue-50' : ''}`}>
-                <td className="px-4 py-2">
-                  <input type="checkbox" checked={selected.has(doc.id)} onChange={() => toggleOne(doc.id)} className="cursor-pointer" />
-                </td>
-                <td className="px-4 py-2 max-w-xs truncate font-medium text-gray-900">{doc.file_name}</td>
-                <td className="px-4 py-2 text-gray-600">{(FORM_TYPE_LABELS as Record<string, string>)[doc.form_type] ?? doc.form_type}</td>
-                <td className="px-4 py-2 text-gray-600">
-                  {doc.life_assured_name
-                    ? <Link href={`/clients/${encodeURIComponent(doc.life_assured_name)}`} className="text-blue-600 hover:underline font-medium">{doc.life_assured_name}</Link>
-                    : '-'}
-                </td>
-                <td className="px-4 py-2 text-gray-500 font-mono text-xs">{doc.nric ?? '-'}</td>
-                <td className="px-4 py-2 text-gray-500 font-mono text-xs">{doc.policy_no ?? '-'}</td>
-                <td className="px-4 py-2 text-gray-600">{doc.agent_name ?? '-'}</td>
-                <td className="px-4 py-2">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge(doc.status)}`}>{doc.status}</span>
-                </td>
-                <td className="px-4 py-2 text-gray-400 text-xs">{new Date(doc.created_at).toLocaleDateString('en-MY')}</td>
+                {COLUMNS.map(col => (
+                  <th
+                    key={col.key}
+                    className="px-4 py-2.5 text-left select-none cursor-pointer hover:bg-gray-100 transition-colors"
+                    style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6b7280' }}
+                    onClick={() => handleSort(col.key)}
+                  >
+                    {col.label}<SortIcon col={col.key} />
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((doc, i) => {
+                const s = statusStyle(doc.status)
+                const isSelected = selected.has(doc.id)
+                return (
+                  <tr
+                    key={doc.id}
+                    style={{
+                      background: isSelected ? '#fff5f5' : i % 2 === 0 ? '#fff' : '#fafafa',
+                      borderBottom: '1px solid #f3f4f6',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseOver={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#f9fafb' }}
+                    onMouseOut={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? '#fff' : '#fafafa' }}
+                  >
+                    <td className="px-4 py-2.5">
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleOne(doc.id)} className="cursor-pointer" style={{ accentColor: ACCENT }} />
+                    </td>
+                    <td className="px-4 py-2.5 max-w-xs truncate font-semibold" style={{ color: DARK }}>{doc.file_name}</td>
+                    <td className="px-4 py-2.5" style={{ color: '#6b7280' }}>{(FORM_TYPE_LABELS as Record<string, string>)[doc.form_type] ?? doc.form_type}</td>
+                    <td className="px-4 py-2.5" style={{ color: '#374151' }}>
+                      {doc.life_assured_name
+                        ? <Link href={`/clients/${encodeURIComponent(doc.life_assured_name)}`}
+                            className="font-semibold hover:underline"
+                            style={{ color: ACCENT }}>
+                            {doc.life_assured_name}
+                          </Link>
+                        : <span style={{ color: '#d1d5db' }}>—</span>}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs" style={{ color: '#9ca3af' }}>{doc.nric ?? '—'}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs" style={{ color: '#9ca3af' }}>{doc.policy_no ?? '—'}</td>
+                    <td className="px-4 py-2.5" style={{ color: '#6b7280' }}>{doc.agent_name ?? '—'}</td>
+                    <td className="px-4 py-2.5">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ background: s.bg, color: s.color }}>
+                        {doc.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: '#9ca3af' }}>
+                      {new Date(doc.created_at).toLocaleDateString('en-MY')}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
+
+      {/* Footer count */}
+      <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderTop: '1px solid #f3f4f6', background: '#fafafa' }}>
+        <span className="text-xs" style={{ color: '#9ca3af' }}>
+          {filtered.length} of {documents.length} record{documents.length !== 1 ? 's' : ''}
+        </span>
+        {someChecked && (
+          <span className="text-xs font-semibold" style={{ color: ACCENT }}>{selectedDocs.length} selected</span>
+        )}
+      </div>
     </div>
   )
 }
