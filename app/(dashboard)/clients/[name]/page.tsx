@@ -126,7 +126,11 @@ export default async function ClientProfilePage({ params }: { params: Promise<{ 
                   const isDupe = duplicateIds.has(doc.id)
                   return (
                     <tr key={doc.id} className={isDupe ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-gray-50'}>
-                      <td className="px-4 py-2 max-w-xs truncate font-medium text-gray-900">{doc.file_name}</td>
+                      <td className="px-4 py-2 max-w-xs truncate font-medium">
+                        <Link href={`/documents/${doc.id}`} className="hover:underline" style={{ color: '#111827' }}>
+                          {doc.file_name}
+                        </Link>
+                      </td>
                       <td className="px-4 py-2 text-gray-600">{(FORM_TYPE_LABELS as Record<string, string>)[doc.form_type] ?? doc.form_type}</td>
                       <td className="px-4 py-2 text-gray-500 font-mono text-xs">{doc.policy_no ?? '-'}</td>
                       <td className="px-4 py-2 text-gray-600">{doc.agent_name ?? '-'}</td>
