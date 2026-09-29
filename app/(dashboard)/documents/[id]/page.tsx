@@ -8,41 +8,37 @@ import DocumentViewer from './DocumentViewer'
 
 const DARK = '#111827'
 
-export default async function DocumentDetailPage({ params }: { params: { id: string } }) {
+export default async function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: doc } = await supabase
     .from('documents')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!doc) notFound()
 
-  // Generate a signed URL server-side (1 hour expiry)
   const { data: signedData } = await supabase.storage
     .from('documents')
     .createSignedUrl(doc.storage_path, 3600)
 
   const signedUrl = signedData?.signedUrl ?? null
-
   const isPdf = doc.file_name?.toLowerCase().endsWith('.pdf')
 
   return (
     <div className="space-y-6">
-      {/* Back */}
       <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline" style={{ color: '#6b7280' }}>
         ← Back to Documents
       </Link>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Left: file viewer */}
         <div>
           <h2 className="text-base font-bold mb-3" style={{ color: DARK }}>Original Document</h2>
           <DocumentViewer signedUrl={signedUrl} isPdf={isPdf} fileName={doc.file_name} />
         </div>
 
-        {/* Right: extracted fields */}
         <div>
           <div className="flex items-center gap-3 mb-3">
             <h2 className="text-base font-bold" style={{ color: DARK }}>Extracted Fields</h2>
