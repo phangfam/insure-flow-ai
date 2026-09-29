@@ -25,7 +25,14 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  if (pathname.startsWith('/login') || pathname.startsWith('/pending') || pathname.startsWith('/api')) {
+  // Public routes — never redirect
+  if (
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/pending') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/api')
+  ) {
     return response
   }
 
