@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
+import DeleteRequestButton from '@/components/DeleteRequestButton'
 
 const ACCENT = '#F45D54'
 const DARK = '#111827'
@@ -181,21 +182,11 @@ export default async function AdminPage() {
                           {new Date(doc.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </td>
                         <td className="px-4 py-2.5">
-                          {/* Delete requires human approval — submits to approval queue, does NOT delete immediately */}
-                          <form action="/api/admin/request-delete" method="POST" onSubmit={e => {
-                            if (!confirm(`Request deletion of "${doc.file_name}"?\n\nThis will be queued for human approval — nothing is deleted immediately.`)) {
-                              e.preventDefault()
-                            }
-                          }}>
-                            <input type="hidden" name="docId" value={doc.id} />
-                            <button
-                              type="submit"
-                              className="text-xs font-semibold px-3 py-1 rounded-lg transition-opacity hover:opacity-80"
-                              style={{ background: '#fff5f5', color: ACCENT, border: '1px solid #fecaca' }}
-                            >
-                              Request Delete
-                            </button>
-                          </form>
+                          <DeleteRequestButton
+                            docId={doc.id}
+                            fileName={doc.file_name}
+                            confirmMessage={`Request deletion of "${doc.file_name}"?\n\nThis will be queued for human approval — nothing is deleted immediately.`}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -242,17 +233,11 @@ export default async function AdminPage() {
                       {new Date(doc.created_at).toLocaleDateString('en-MY')}
                     </td>
                     <td className="px-4 py-2.5">
-                      <form action="/api/admin/request-delete" method="POST" onSubmit={e => {
-                        if (!confirm(`Request deletion of "${doc.file_name}"?\n\nQueued for admin approval — nothing deleted immediately.`)) {
-                          e.preventDefault()
-                        }
-                      }}>
-                        <input type="hidden" name="docId" value={doc.id} />
-                        <button type="submit" className="text-xs font-semibold px-3 py-1 rounded-lg hover:opacity-80"
-                          style={{ background: '#fff5f5', color: ACCENT, border: '1px solid #fecaca' }}>
-                          Request Delete
-                        </button>
-                      </form>
+                      <DeleteRequestButton
+                        docId={doc.id}
+                        fileName={doc.file_name}
+                        confirmMessage={`Request deletion of "${doc.file_name}"?\n\nQueued for admin approval — nothing deleted immediately.`}
+                      />
                     </td>
                   </tr>
                 ))}
