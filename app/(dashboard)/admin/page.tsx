@@ -29,6 +29,13 @@ export default async function AdminPage() {
     .select('id, file_name, life_assured_name, form_type, policy_no, created_at')
     .order('created_at', { ascending: false })
 
+  // Load pending delete requests
+  const { data: deleteRequests } = await supabase
+    .from('delete_requests')
+    .select('id, document_id, file_name, requested_at, status')
+    .eq('status', 'pending')
+    .order('requested_at', { ascending: false })
+
   const dupeGroups: { key: string; ids: { id: string; file_name: string; life_assured_name: string | null; created_at: string }[] }[] = []
   if (allDocs) {
     const seen: Record<string, typeof allDocs> = {}
@@ -246,6 +253,73 @@ export default async function AdminPage() {
           </div>
         </section>
       )}
+
+      {/* ── SECTION 4: Delete Approval Queue ── */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold" style={{ color: DARK }}>Delete Approval Queue</h2>
+          {deleteRequests && deleteRequests.length > 0 && (
+            <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: '#fff5f5', color: ACCENT, border: '1px solid #fecaca' }}>
+              {deleteRequests.length} pending
+            </span>
+          )}
+        </div>
+
+        {(!deleteRequests || deleteRequests.length === 0) ? (
+          <div className="rounded-2xl px-5 py-10 text-center" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+            <p className="text-sm font-semibold" style={{ color: '#16a34a' }}>✓ No pending delete requests</p>
+            <p className="text-xs mt-1" style={{ color: '#6b7280' }}>All queued requests have been reviewed.</p>
+          </div>
+        ) : (
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #fecaca' }}>
+            <div className="px-5 py-3" style={{ borderBottom: '1px solid #fecaca', background: '#fff5f5' }}>
+              <span className="text-sm font-bold" style={{ color: ACCENT }}>⚠ Awaiting human approval — nothing has been deleted yet</span>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  {['File Name', 'Requested', 'Action'].map(h => (
+                    <th key={h} className="px-5 py-2.5 text-left" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#9ca3af' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {deleteRequests.map((req, i) => (
+                  <tr key={req.id} style={{ borderBottom: i < deleteRequests.length - 1 ? '1px solid #f9fafb' : 'none' }}>
+                    <td className="px-5 py-3 font-medium" style={{ color: DARK }}>{req.file_name}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: '#9ca3af' }}>
+                      {new Date(req.requested_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <form action="/api/admin/approve-delete" method="POST">
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input type="hidden" name="documentId" value={req.document_id} />
+                          <input type="hidden" name="action" value="approve" />
+                          <button type="submit" className="text-xs font-semibold px-3 py-1 rounded-lg hover:opacity-80"
+                            style={{ background: '#fff5f5', color: ACCENT, border: '1px solid #fecaca' }}>
+                            Approve &amp; Delete
+                          </button>
+                        </form>
+                        <form action="/api/admin/approve-delete" method="POST">
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input type="hidden" name="documentId" value={req.document_id} />
+                          <input type="hidden" name="action" value="reject" />
+                          <button type="submit" className="text-xs font-semibold px-3 py-1 rounded-lg hover:opacity-80"
+                            style={{ background: '#f9fafb', color: '#6b7280', border: '1px solid #e5e7eb' }}>
+                            Reject
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
     </div>
   )
 }
