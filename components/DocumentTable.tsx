@@ -113,7 +113,7 @@ export default function DocumentTable({ documents }: { documents: Document[] }) 
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="flex-1 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2"
-          style={{ border: '1px solid #e5e7eb', focusRingColor: ACCENT }}
+          style={{ border: '1px solid #e5e7eb' }}
         />
         <select
           value={statusFilter}
@@ -151,7 +151,6 @@ export default function DocumentTable({ documents }: { documents: Document[] }) 
                     ref={el => { if (el) el.indeterminate = someChecked && !allChecked }}
                     onChange={toggleAll}
                     className="cursor-pointer"
-                    style={{ accentColor: ACCENT }}
                   />
                 </th>
                 {COLUMNS.map(col => (
@@ -182,7 +181,7 @@ export default function DocumentTable({ documents }: { documents: Document[] }) 
                     onMouseOut={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? '#fff' : '#fafafa' }}
                   >
                     <td className="px-4 py-2.5">
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleOne(doc.id)} className="cursor-pointer" style={{ accentColor: ACCENT }} />
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleOne(doc.id)} className="cursor-pointer" />
                     </td>
                     <td className="px-4 py-2.5 max-w-xs truncate font-semibold" style={{ color: DARK }}>{doc.file_name}</td>
                     <td className="px-4 py-2.5" style={{ color: '#6b7280' }}>{(FORM_TYPE_LABELS as Record<string, string>)[doc.form_type] ?? doc.form_type}</td>
